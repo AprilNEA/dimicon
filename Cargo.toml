@@ -1,0 +1,36 @@
+[package]
+name = "dimicon"
+version = "0.0.1-beta.1"
+authors = [
+    "AprilNEA <dev@aprilnea.me> (https://aprilnea.me/)",
+    "Sukka <github@sku.moe> (https://skk.moe/)",
+]
+edition = "2024"
+description = "Docker Image Icon - A library for fetching Docker image icons"
+documentation = "https://docs.rs/dimicon"
+readme = "README.md"
+homepage = "https://github.com/AprilNEA/dimicon"
+repository = "https://github.com/AprilNEA/dimicon"
+license = "MIT"
+license-file = "LICENSE"
+keywords = ["docker", "icon", "container", "registry"]
+categories = ["web-programming", "api-bindings"]
+
+[lib]
+name = "dimicon"
+path = "src/lib.rs"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+tracing = "0.1"
+urlencoding = "2.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
