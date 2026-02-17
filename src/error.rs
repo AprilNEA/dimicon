@@ -14,6 +14,9 @@ pub enum Error {
 
     #[error("Image icon not found")]
     NotFound,
+
+    #[error("Network error: {0}")]
+    Network(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
