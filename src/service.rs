@@ -13,7 +13,7 @@ use crate::types::{DockerHubLogoResponse, DockerHubOrgResponse, IconSource};
 ///
 /// - Docker Hub image logos
 /// - Docker Hub organization gravatars
-/// - devicons/devicon (via jsDelivr CDN)
+/// - devicons/devicon (via jsDelivr CDN, requires `devicon` feature)
 /// - Docker Official Images (via jsDelivr CDN)
 /// - GitHub Container Registry (via GitHub Avatar)
 ///
@@ -64,7 +64,7 @@ impl IconService {
     ///
     /// Tries multiple sources in order of priority:
     /// 1. Registry-specific free sources (Docker Official Image logo, GHCR avatar)
-    /// 2. devicons/devicon via jsDelivr CDN (universal, works for any registry)
+    /// 2. devicons/devicon via jsDelivr CDN (universal, requires `devicon` feature)
     /// 3. Rate-limited Docker Hub APIs (org Gravatar, image logo)
     ///
     /// # Arguments
@@ -96,6 +96,7 @@ impl IconService {
         }
 
         // 2. Try devicons/devicon via jsDelivr CDN (universal, works for any registry)
+        #[cfg(feature = "devicon")]
         if let Some(icon) = self.get_devicon_logo(&parsed.name).await? {
             return Ok(icon);
         }
@@ -204,6 +205,7 @@ impl IconService {
     /// Get the icon from devicons/devicon via jsDelivr CDN
     ///
     /// URL: `https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/{name}/{name}-original.svg`
+    #[cfg(feature = "devicon")]
     async fn get_devicon_logo(&self, image_name: &str) -> Result<Option<IconSource>> {
         let url = format!(
             "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/{name}/{name}-original.svg",
@@ -294,6 +296,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "devicon")]
     fn test_icon_source_devicon() {
         let icon = IconSource::Devicon {
             url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nginx/nginx-original.svg".to_string(),

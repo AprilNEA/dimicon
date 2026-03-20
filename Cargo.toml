@@ -16,6 +16,10 @@ license-file = "LICENSE"
 keywords = ["docker", "icon", "container", "registry"]
 categories = ["web-programming", "api-bindings"]
 
+[features]
+default = []
+devicon = []
+
 [lib]
 name = "dimicon"
 path = "src/lib.rs"

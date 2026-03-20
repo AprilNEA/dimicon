@@ -10,7 +10,7 @@
 
 - Fetch icons from Docker Hub image logos
 - Fetch icons from Docker Hub organization Gravatars
-- Fetch icons from [devicons/devicon](https://github.com/devicons/devicon) (via jsDelivr CDN)
+- Fetch icons from [devicons/devicon](https://github.com/devicons/devicon) (via jsDelivr CDN, opt-in with `devicon` feature)
 - Fetch icons from Docker Official Images (via jsDelivr CDN)
 - Fetch icons from GitHub Container Registry (via GitHub Avatar)
 - Parse Docker image reference strings in various formats
@@ -23,6 +23,13 @@ Add this to your `Cargo.toml`:
 [dependencies]
 dimicon = "0.1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+```
+
+To enable [devicons/devicon](https://github.com/devicons/devicon) icon lookup:
+
+```toml
+[dependencies]
+dimicon = { version = "0.1", features = ["devicon"] }
 ```
 
 ## Quick Start

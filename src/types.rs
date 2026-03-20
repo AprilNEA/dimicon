@@ -40,6 +40,7 @@ pub enum IconSource {
     /// Logo from Docker Official Image (via GitHub docker-library/docs)
     DockerOfficialImage { url: String },
     /// Icon from devicons/devicon (via jsDelivr CDN)
+    #[cfg(feature = "devicon")]
     Devicon { url: String },
     /// Avatar from GitHub Container Registry
     GhcrAvatar { url: String },
@@ -56,6 +57,7 @@ impl IconSource {
             IconSource::DockerHubLogo { url } => Some(url),
             IconSource::DockerHubOrgGravatar { url } => Some(url),
             IconSource::DockerOfficialImage { url } => Some(url),
+            #[cfg(feature = "devicon")]
             IconSource::Devicon { url } => Some(url),
             IconSource::GhcrAvatar { url } => Some(url),
             IconSource::Custom { url } => Some(url),
