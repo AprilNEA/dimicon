@@ -6,6 +6,7 @@
 //!
 //! - Fetch icons from Docker Hub image logos
 //! - Fetch icons from Docker Hub organization Gravatars
+//! - Fetch icons from [devicons/devicon](https://github.com/devicons/devicon) (via jsDelivr CDN)
 //! - Fetch icons from Docker Official Images (via jsDelivr CDN)
 //! - Fetch icons from GitHub Container Registry (via GitHub Avatar)
 //! - Parse Docker image reference strings

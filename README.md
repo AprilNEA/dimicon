@@ -10,6 +10,7 @@
 
 - Fetch icons from Docker Hub image logos
 - Fetch icons from Docker Hub organization Gravatars
+- Fetch icons from [devicons/devicon](https://github.com/devicons/devicon) (via jsDelivr CDN, opt-in with `devicon` feature)
 - Fetch icons from Docker Official Images (via jsDelivr CDN)
 - Fetch icons from GitHub Container Registry (via GitHub Avatar)
 - Parse Docker image reference strings in various formats
@@ -22,6 +23,13 @@ Add this to your `Cargo.toml`:
 [dependencies]
 dimicon = "0.1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+```
+
+To enable [devicons/devicon](https://github.com/devicons/devicon) icon lookup:
+
+```toml
+[dependencies]
+dimicon = { version = "0.1", features = ["devicon"] }
 ```
 
 ## Quick Start
@@ -55,9 +63,9 @@ async fn main() -> Result<(), dimicon::Error> {
 
 | Registry | Icon Source |
 |----------|-------------|
-| Docker Hub (`docker.io`) | Image logo → Org Gravatar → Official Image logo |
-| GitHub Container Registry (`ghcr.io`) | GitHub Avatar |
-| Other registries | Not supported (returns `NotFound`) |
+| Docker Hub (`docker.io`) | Official Image logo → Devicon → Image logo → Org Gravatar |
+| GitHub Container Registry (`ghcr.io`) | GitHub Avatar → Devicon |
+| Other registries | Devicon |
 
 ## Image Reference Parsing
 
@@ -99,6 +107,7 @@ use dimicon::IconSource;
 match icon {
     IconSource::DockerHubLogo { url } => println!("Docker Hub logo: {}", url),
     IconSource::DockerHubOrgGravatar { url } => println!("Org gravatar: {}", url),
+    IconSource::Devicon { url } => println!("Devicon: {}", url),
     IconSource::DockerOfficialImage { url } => println!("Official image: {}", url),
     IconSource::GhcrAvatar { url } => println!("GitHub avatar: {}", url),
     IconSource::Custom { url } => println!("Custom icon: {}", url),
@@ -152,13 +161,11 @@ let icon = dimicon::get_icon("redis").await?;
 
 The library fetches icons using the following priority:
 
-1. **Docker Official Images**: Fetches logos from the [docker-library/docs](https://github.com/docker-library/docs) repository via jsDelivr CDN.
+1. **Registry-specific free sources**: Docker Official Image logos (via jsDelivr CDN), GitHub avatars for GHCR images.
 
-2. **Docker Hub Images**: Queries the Docker Hub media API (`hub.docker.com/api/media/repos_logo/v1/`) for image logos.
+2. **[Devicon](https://github.com/devicons/devicon)**: Looks up the image name in the devicons/devicon icon library via jsDelivr CDN. This is a universal fallback that works for any registry.
 
-3. **Docker Hub Organizations**: Falls back to organization Gravatar via the Docker Hub v2 API.
-
-4. **GitHub Container Registry**: Uses GitHub avatar URLs based on the namespace.
+3. **Rate-limited Docker Hub APIs**: Image logo, then organization Gravatar via the Docker Hub API. These are tried last to conserve the per-IP rate limit (180 req/hour).
 
 ## Rate Limiting
 
