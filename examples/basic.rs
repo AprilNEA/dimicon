@@ -38,6 +38,10 @@ async fn main() -> Result<(), dimicon::Error> {
                         println!("✓ Docker Hub Org Gravatar");
                         println!("  URL: {}", url);
                     }
+                    IconSource::Devicon { url } => {
+                        println!("✓ Devicon");
+                        println!("  URL: {}", url);
+                    }
                     IconSource::DockerOfficialImage { url } => {
                         println!("✓ Docker Official Image");
                         println!("  URL: {}", url);

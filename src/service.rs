@@ -13,6 +13,7 @@ use crate::types::{DockerHubLogoResponse, DockerHubOrgResponse, IconSource};
 ///
 /// - Docker Hub image logos
 /// - Docker Hub organization gravatars
+/// - devicons/devicon (via jsDelivr CDN)
 /// - Docker Official Images (via jsDelivr CDN)
 /// - GitHub Container Registry (via GitHub Avatar)
 ///
@@ -62,9 +63,9 @@ impl IconService {
     /// Get the icon for an image
     ///
     /// Tries multiple sources in order of priority:
-    /// 1. For Docker Official Images, use jsDelivr CDN first
-    /// 2. Try Docker Hub API to get image Logo
-    /// 3. Fallback to organization/user Gravatar
+    /// 1. Registry-specific free sources (Docker Official Image logo, GHCR avatar)
+    /// 2. devicons/devicon via jsDelivr CDN (universal, works for any registry)
+    /// 3. Rate-limited Docker Hub APIs (org Gravatar, image logo)
     ///
     /// # Arguments
     ///
@@ -80,36 +81,35 @@ impl IconService {
 
     /// Get the icon for a parsed image reference
     pub async fn get_icon_for_ref(&self, parsed: &ImageReference) -> Result<IconSource> {
-        if parsed.is_ghcr() {
-            return self.get_ghcr_icon(parsed).await;
-        }
-
+        // 1. Try registry-specific free sources first
         if parsed.is_docker_hub() {
-            return self.get_docker_hub_icon(parsed).await;
-        }
-
-        // Other registries are not supported yet
-        Ok(IconSource::NotFound)
-    }
-
-    /// Get the icon for a Docker Hub image
-    async fn get_docker_hub_icon(&self, parsed: &ImageReference) -> Result<IconSource> {
-        // 1. If it is a Docker Official Image, use jsDelivr first
-        if parsed.is_docker_official() {
-            if let Some(icon) = self.get_docker_official_image_logo(&parsed.name).await? {
-                return Ok(icon);
+            if parsed.is_docker_official() {
+                if let Some(icon) = self.get_docker_official_image_logo(&parsed.name).await? {
+                    return Ok(icon);
+                }
+            }
+        } else if parsed.is_ghcr() {
+            let result = self.get_ghcr_icon(parsed).await?;
+            if result.is_found() {
+                return Ok(result);
             }
         }
 
-        // 2. Try Docker Hub API to get image Logo
-        let repo_name = parsed.docker_hub_repo_name();
-        if let Some(icon) = self.get_docker_hub_repo_logo(&repo_name).await? {
+        // 2. Try devicons/devicon via jsDelivr CDN (universal, works for any registry)
+        if let Some(icon) = self.get_devicon_logo(&parsed.name).await? {
             return Ok(icon);
         }
 
-        // 3. Fallback to organization/user Gravatar
-        if let Some(icon) = self.get_docker_hub_org_gravatar(&parsed.namespace).await? {
-            return Ok(icon);
+        // 3. Try rate-limited Docker Hub APIs as last resort
+        if parsed.is_docker_hub() {
+            let repo_name = parsed.docker_hub_repo_name();
+            if let Some(icon) = self.get_docker_hub_repo_logo(&repo_name).await? {
+                return Ok(icon);
+            }
+
+            if let Some(icon) = self.get_docker_hub_org_gravatar(&parsed.namespace).await? {
+                return Ok(icon);
+            }
         }
 
         Ok(IconSource::NotFound)
@@ -201,6 +201,27 @@ impl IconService {
         }
     }
 
+    /// Get the icon from devicons/devicon via jsDelivr CDN
+    ///
+    /// URL: `https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/{name}/{name}-original.svg`
+    async fn get_devicon_logo(&self, image_name: &str) -> Result<Option<IconSource>> {
+        let url = format!(
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/{name}/{name}-original.svg",
+            name = image_name
+        );
+
+        debug!("Checking devicon logo at: {}", url);
+
+        let response = self.client.head(&url).send().await?;
+
+        if response.status().is_success() {
+            Ok(Some(IconSource::Devicon { url }))
+        } else {
+            debug!("Devicon logo not found for: {}", image_name);
+            Ok(None)
+        }
+    }
+
     /// Get the Docker Official Image logo
     ///
     /// Fetches the logo from the GitHub docker-library/docs repository via jsDelivr
@@ -270,6 +291,18 @@ mod tests {
         }
         .is_found());
         assert!(!IconSource::NotFound.is_found());
+    }
+
+    #[test]
+    fn test_icon_source_devicon() {
+        let icon = IconSource::Devicon {
+            url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nginx/nginx-original.svg".to_string(),
+        };
+        assert_eq!(
+            icon.url(),
+            Some("https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nginx/nginx-original.svg")
+        );
+        assert!(icon.is_found());
     }
 
     #[test]
