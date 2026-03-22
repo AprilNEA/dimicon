@@ -2,21 +2,16 @@ use thiserror::Error;
 
 /// dimicon library error types
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
     #[error("HTTP request failed: {0}")]
     Request(#[from] reqwest::Error),
 
-    #[error("Invalid image reference format: {0}")]
-    InvalidImageReference(String),
+    #[error("invalid image reference: {0}")]
+    InvalidImageReference(&'static str),
 
-    #[error("Rate limited by Docker Hub")]
+    #[error("rate limited by upstream service")]
     RateLimited,
-
-    #[error("Image icon not found")]
-    NotFound,
-
-    #[error("Network error: {0}")]
-    Network(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

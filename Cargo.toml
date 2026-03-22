@@ -12,7 +12,6 @@ readme = "README.md"
 homepage = "https://github.com/AprilNEA/dimicon"
 repository = "https://github.com/AprilNEA/dimicon"
 license = "MIT"
-license-file = "LICENSE"
 keywords = ["docker", "icon", "container", "registry"]
 categories = ["web-programming", "api-bindings"]
 

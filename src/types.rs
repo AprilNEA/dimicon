@@ -2,36 +2,23 @@ use serde::{Deserialize, Serialize};
 
 /// Docker Hub image logo API response
 #[derive(Debug, Clone, Deserialize)]
-pub struct DockerHubLogoResponse {
+pub(crate) struct DockerHubLogoResponse {
     pub logo_url: Option<String>,
-    pub last_updated: Option<String>,
 }
 
 /// Docker Hub organization info response
 #[derive(Debug, Clone, Deserialize)]
-pub struct DockerHubOrgResponse {
-    pub id: String,
-    pub orgname: Option<String>,
-    pub full_name: Option<String>,
-    pub location: Option<String>,
-    pub company: Option<String>,
+pub(crate) struct DockerHubOrgResponse {
     pub gravatar_url: Option<String>,
-    pub gravatar_email: Option<String>,
 }
 
-/// Docker Hub user info response
-#[derive(Debug, Clone, Deserialize)]
-pub struct DockerHubUserResponse {
-    pub id: String,
-    pub username: Option<String>,
-    pub full_name: Option<String>,
-    pub gravatar_url: Option<String>,
-    pub gravatar_email: Option<String>,
-}
-
-/// Image icon source - Identify the source of the icon
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// Image icon source
+///
+/// Identifies where the icon was resolved from. Every variant carries
+/// the URL of the icon.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum IconSource {
     /// Logo from Docker Hub image
     DockerHubLogo { url: String },
@@ -46,38 +33,55 @@ pub enum IconSource {
     GhcrAvatar { url: String },
     /// User-defined custom icon URL
     Custom { url: String },
-    /// Icon not found
-    NotFound,
 }
 
 impl IconSource {
-    /// Get the URL of the icon, or None if not found
-    pub fn url(&self) -> Option<&str> {
+    /// Get the URL of the icon
+    pub fn url(&self) -> &str {
         match self {
-            IconSource::DockerHubLogo { url } => Some(url),
-            IconSource::DockerHubOrgGravatar { url } => Some(url),
-            IconSource::DockerOfficialImage { url } => Some(url),
+            Self::DockerHubLogo { url }
+            | Self::DockerHubOrgGravatar { url }
+            | Self::DockerOfficialImage { url }
+            | Self::GhcrAvatar { url }
+            | Self::Custom { url } => url,
             #[cfg(feature = "devicon")]
-            IconSource::Devicon { url } => Some(url),
-            IconSource::GhcrAvatar { url } => Some(url),
-            IconSource::Custom { url } => Some(url),
-            IconSource::NotFound => None,
+            Self::Devicon { url } => url,
         }
-    }
-
-    /// Check if the icon was found
-    pub fn is_found(&self) -> bool {
-        !matches!(self, IconSource::NotFound)
     }
 
     /// Create a custom icon source
     pub fn custom(url: impl Into<String>) -> Self {
-        IconSource::Custom { url: url.into() }
+        Self::Custom { url: url.into() }
     }
 }
 
-impl Default for IconSource {
-    fn default() -> Self {
-        IconSource::NotFound
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_url() {
+        let source = IconSource::DockerHubLogo {
+            url: "https://example.com/logo.png".to_string(),
+        };
+        assert_eq!(source.url(), "https://example.com/logo.png");
+    }
+
+    #[test]
+    #[cfg(feature = "devicon")]
+    fn test_devicon() {
+        let icon = IconSource::Devicon {
+            url: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nginx/nginx-original.svg".to_string(),
+        };
+        assert_eq!(
+            icon.url(),
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nginx/nginx-original.svg"
+        );
+    }
+
+    #[test]
+    fn test_custom() {
+        let icon = IconSource::custom("https://example.com/icon.png");
+        assert_eq!(icon.url(), "https://example.com/icon.png");
     }
 }
