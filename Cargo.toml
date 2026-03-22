@@ -1,6 +1,6 @@
 [package]
 name = "dimicon"
-version = "0.0.1-beta.3"
+version = "0.1.0"
 authors = [
     "AprilNEA <dev@aprilnea.me> (https://aprilnea.me/)",
     "Sukka <github@sku.moe> (https://skk.moe/)",
