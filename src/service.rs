@@ -3,7 +3,7 @@ use tracing::{debug, warn};
 
 use crate::error::{Error, Result};
 use crate::parser::ImageReference;
-use crate::types::{DockerHubLogoResponse, DockerHubOrgResponse, IconSource};
+use crate::types::{DockerHubLogoResponse, DockerHubOrgResponse, Icon, IconSource};
 
 const USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
@@ -101,6 +101,42 @@ impl IconService {
         }
 
         Ok(None)
+    }
+
+    /// Get the icon with its source metadata and downloaded image data
+    ///
+    /// Like [`get_icon`](Self::get_icon), but also fetches the actual image
+    /// bytes from the resolved URL.
+    pub async fn get_icon_with_source(&self, image: &str) -> Result<Option<Icon>> {
+        let source = match self.get_icon(image).await? {
+            Some(s) => s,
+            None => return Ok(None),
+        };
+        self.download_icon(source).await.map(Some)
+    }
+
+    /// Get the icon with source for a parsed image reference
+    pub async fn get_icon_with_source_for_ref(
+        &self,
+        parsed: &ImageReference,
+    ) -> Result<Option<Icon>> {
+        let source = match self.get_icon_for_ref(parsed).await? {
+            Some(s) => s,
+            None => return Ok(None),
+        };
+        self.download_icon(source).await.map(Some)
+    }
+
+    /// Download the actual image data for a resolved [`IconSource`]
+    async fn download_icon(&self, source: IconSource) -> Result<Icon> {
+        let resp = self.client.get(source.url()).send().await?;
+        let content_type = resp
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_owned());
+        let data = resp.bytes().await?.to_vec();
+        Ok(Icon::new(source, data, content_type))
     }
 
     /// Fetch logo via the Docker Hub media API

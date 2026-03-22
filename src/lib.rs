@@ -62,7 +62,7 @@ mod types;
 pub use error::{Error, Result};
 pub use parser::ImageReference;
 pub use service::IconService;
-pub use types::IconSource;
+pub use types::{Icon, IconSource};
 
 /// Convenience function to get an icon for an image
 ///

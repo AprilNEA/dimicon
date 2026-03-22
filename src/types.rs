@@ -55,6 +55,45 @@ impl IconSource {
     }
 }
 
+/// A resolved icon with its source metadata and raw image data
+#[derive(Debug, Clone)]
+pub struct Icon {
+    source: IconSource,
+    data: Vec<u8>,
+    content_type: Option<String>,
+}
+
+impl Icon {
+    pub(crate) fn new(source: IconSource, data: Vec<u8>, content_type: Option<String>) -> Self {
+        Self { source, data, content_type }
+    }
+
+    /// The source this icon was resolved from
+    pub fn source(&self) -> &IconSource {
+        &self.source
+    }
+
+    /// The URL of the icon
+    pub fn url(&self) -> &str {
+        self.source.url()
+    }
+
+    /// Raw image bytes
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    /// Consume the icon and return the raw image bytes
+    pub fn into_data(self) -> Vec<u8> {
+        self.data
+    }
+
+    /// MIME content type, if known (e.g. `image/png`, `image/svg+xml`)
+    pub fn content_type(&self) -> Option<&str> {
+        self.content_type.as_deref()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
