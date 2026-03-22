@@ -82,3 +82,22 @@ pub use types::{Icon, IconSource};
 pub async fn get_icon(image: &str) -> Result<Option<IconSource>> {
     IconService::new().get_icon(image).await
 }
+
+/// Convenience function to get an icon with its source metadata and image data
+///
+/// Creates a new [`IconService`] for each call. For better performance
+/// when fetching multiple icons, create a single service and reuse it.
+///
+/// # Example
+///
+/// ```no_run
+/// #[tokio::main]
+/// async fn main() {
+///     if let Some(icon) = dimicon::get_icon_with_source("nginx").await.unwrap() {
+///         println!("Source: {:?}, {} bytes", icon.source(), icon.data().len());
+///     }
+/// }
+/// ```
+pub async fn get_icon_with_source(image: &str) -> Result<Option<Icon>> {
+    IconService::new().get_icon_with_source(image).await
+}
