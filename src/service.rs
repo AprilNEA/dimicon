@@ -85,11 +85,17 @@ impl IconService {
 
         // 2. devicons/devicon via jsDelivr CDN
         #[cfg(feature = "devicon")]
-        if let Some(icon) = self.fetch_devicon_logo(parsed.name()).await? {
+        if let Some(icon) = self.fetch_devicon_logo(parsed.name(), parsed.namespace()).await? {
             return Ok(Some(icon));
         }
 
-        // 3. Rate-limited Docker Hub APIs as last resort
+        // 3. Simple Icons via simpleicons.org CDN
+        #[cfg(feature = "simpleicon")]
+        if let Some(icon) = self.fetch_simpleicon_logo(parsed.name(), parsed.namespace()).await? {
+            return Ok(Some(icon));
+        }
+
+        // 4. Rate-limited Docker Hub APIs as last resort
         if parsed.is_docker_hub() {
             let repo_name = parsed.docker_hub_repo_name();
             if let Some(icon) = self.fetch_docker_hub_logo(&repo_name).await? {
@@ -202,14 +208,29 @@ impl IconService {
     }
 
     /// Fetch icon from devicons/devicon via jsDelivr CDN
+    /// Tries to match the image name first, then falls back to the namespace
     #[cfg(feature = "devicon")]
-    async fn fetch_devicon_logo(&self, image_name: &str) -> Result<Option<IconSource>> {
+    async fn fetch_devicon_logo(&self, image_name: &str, namespace: &str) -> Result<Option<IconSource>> {
+        // Try name first
         let url = format!(
             "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/{name}/{name}-original.svg",
             name = image_name
         );
 
-        debug!("Checking devicon: {url}");
+        debug!("Checking devicon for name: {url}");
+
+        let resp = self.client.head(&url).send().await?;
+        if resp.status().is_success() {
+            return Ok(Some(IconSource::Devicon { url }));
+        }
+
+        // Fallback to namespace
+        let url = format!(
+            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/{name}/{name}-original.svg",
+            name = namespace
+        );
+
+        debug!("Checking devicon for namespace: {url}");
 
         let resp = self.client.head(&url).send().await?;
         if resp.status().is_success() {
@@ -233,6 +254,33 @@ impl IconService {
         let resp = self.client.head(&url).send().await?;
         if resp.status().is_success() {
             Ok(Some(IconSource::DockerOfficialImage { url }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Fetch icon from Simple Icons via simpleicons.org CDN
+    /// Tries to match the image name first, then falls back to the namespace
+    #[cfg(feature = "simpleicon")]
+    async fn fetch_simpleicon_logo(&self, image_name: &str, namespace: &str) -> Result<Option<IconSource>> {
+        // Try name first
+        let url = format!("https://cdn.simpleicons.org/{slug}", slug = image_name);
+
+        debug!("Checking simple icon for name: {url}");
+
+        let resp = self.client.head(&url).send().await?;
+        if resp.status().is_success() {
+            return Ok(Some(IconSource::Simpleicon { url }));
+        }
+
+        // Fallback to namespace
+        let url = format!("https://cdn.simpleicons.org/{slug}", slug = namespace);
+
+        debug!("Checking simple icon for namespace: {url}");
+
+        let resp = self.client.head(&url).send().await?;
+        if resp.status().is_success() {
+            Ok(Some(IconSource::Simpleicon { url }))
         } else {
             Ok(None)
         }
