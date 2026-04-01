@@ -18,6 +18,7 @@ categories = ["web-programming", "api-bindings"]
 [features]
 default = []
 devicon = []
+simpleicon = []
 
 [lib]
 name = "dimicon"

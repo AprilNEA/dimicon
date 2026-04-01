@@ -29,6 +29,9 @@ pub enum IconSource {
     /// Icon from devicons/devicon (via jsDelivr CDN)
     #[cfg(feature = "devicon")]
     Devicon { url: String },
+    /// Icon from Simple Icons (via simpleicons.org CDN)
+    #[cfg(feature = "simpleicon")]
+    Simpleicon { url: String },
     /// Avatar from GitHub Container Registry
     GhcrAvatar { url: String },
     /// User-defined custom icon URL
@@ -46,6 +49,8 @@ impl IconSource {
             | Self::Custom { url } => url,
             #[cfg(feature = "devicon")]
             Self::Devicon { url } => url,
+            #[cfg(feature = "simpleicon")]
+            Self::Simpleicon { url } => url,
         }
     }
 
